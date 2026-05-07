@@ -1,65 +1,133 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import {
+  Header,
+  AgentStatusCard,
+  OpportunitiesNav,
+  OpportunityCard,
+  InsightCard,
+  NarrativeTrapsList,
+  LoadingState,
+  ErrorState,
+} from "@/app/components";
+import { API_BASE } from "@/app/lib/constants";
+import type { Brief, AgentStatus, Idea } from "@/app/types";
+
+export default function Dashboard() {
+  const [brief, setBrief] = useState<Brief | null>(null);
+  const [agents, setAgents] = useState<AgentStatus | null>(null);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState(0);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [briefRes, agentRes, ideasRes] = await Promise.all([
+          fetch(`${API_BASE}/brief/latest`),
+          fetch(`${API_BASE}/agents/latest`),
+          fetch(`${API_BASE}/ideas`),
+        ]);
+
+        if (!briefRes.ok || !agentRes.ok) {
+          throw new Error("Failed to fetch data from backend");
+        }
+
+        const briefData = await briefRes.json();
+        const agentData = await agentRes.json();
+        const ideasData = ideasRes.ok ? await ideasRes.json() : [];
+        setBrief(briefData);
+        setAgents(agentData);
+        setIdeas(ideasData);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load brief. Please try again.",
+        );
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  if (loading) return <LoadingState />;
+
+  if (error) return <ErrorState message={error} />;
+
+  if (!brief)
+    return <ErrorState message="No brief found. Run the pipeline first." />;
+
+  const opportunity = brief.top3Opportunities[selected];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-4xl mx-auto px-6 py-12 lg:py-16">
+        {/* Header */}
+        <Header createdAt={brief.createdAt} />
+
+        {/* Agent Status */}
+        <div className="grid grid-cols-2 gap-4 mb-10">
+          <AgentStatusCard label="Reddit" data={agents?.reddit || null} />
+          <AgentStatusCard
+            label="Product Hunt"
+            data={agents?.producthunt || null}
+          />
+        </div>
+
+        {/* Opportunities Navigation */}
+        <OpportunitiesNav
+          count={brief.top3Opportunities.length}
+          selected={selected}
+          onChange={setSelected}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+
+        {/* Main Opportunity Card */}
+        {opportunity && <OpportunityCard opportunity={opportunity} />}
+
+        {/* Insights Grid */}
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <InsightCard title="Rising Theme">{brief.risingTheme}</InsightCard>
+          <InsightCard title="Contrary Take">{brief.contraryTake}</InsightCard>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Narrative Traps */}
+        <NarrativeTrapsList traps={brief.narrativeTraps} />
+
+        {/* Idea Tracker */}
+        <div className="bg-gray-900 rounded-xl p-5 border border-gray-800 mt-4">
+          <h3 className="text-sm font-medium mb-3 text-gray-400 uppercase tracking-wide">
+            Idea tracker
+          </h3>
+          <div className="space-y-3">
+            {ideas.map((idea) => (
+              <div key={idea._id} className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white">{idea.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    seen {idea.seenCount}x · score {idea.score}
+                  </p>
+                </div>
+                <span
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    idea.trend === "rising"
+                      ? "bg-green-900 text-green-300"
+                      : idea.trend === "fading"
+                        ? "bg-red-900 text-red-300"
+                        : "bg-gray-800 text-gray-400"
+                  }`}
+                >
+                  {idea.trend}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
