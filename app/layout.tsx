@@ -10,6 +10,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Idea Radar",
   description: "Weekly insights brief for opportunities and market trends",
+  icons: {
+    icon: "/IR.png",
+  },
 };
 
 export default function RootLayout({
