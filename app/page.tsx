@@ -46,32 +46,19 @@ interface Idea {
   lastSeenAt?: string;
 }
 
-const competitionConfig = {
-  low: {
-    label: "LOW COMPETITION",
-    color: "#00ff88",
-    bg: "rgba(0,255,136,0.08)",
-  },
-  medium: {
-    label: "MED COMPETITION",
-    color: "#ffaa00",
-    bg: "rgba(255,170,0,0.08)",
-  },
-  high: {
-    label: "HIGH COMPETITION",
-    color: "#ff4444",
-    bg: "rgba(255,68,68,0.08)",
-  },
+const trendConfig = {
+  rising: { label: "↑ rising", color: "#00ff88" },
+  stable: { label: "→ stable", color: "#555" },
+  fading: { label: "↓ fading", color: "#ff4444" },
 };
 
-const trendConfig = {
-  rising: { label: "↑ RISING", color: "#00ff88" },
-  stable: { label: "→ STABLE", color: "#888" },
-  fading: { label: "↓ FADING", color: "#ff4444" },
+const compLabel = {
+  low: "low competition",
+  medium: "medium competition",
+  high: "high competition",
 };
 
 function IdeaDialog({ idea, onClose }: { idea: Idea; onClose: () => void }) {
-  const comp = competitionConfig[idea.competitionLevel ?? "medium"];
   const t = trendConfig[idea.trend];
 
   useEffect(() => {
@@ -82,122 +69,71 @@ function IdeaDialog({ idea, onClose }: { idea: Idea; onClose: () => void }) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  const fields = [
+    { label: "demand evidence", value: idea.demandEvidence },
+    { label: "mvp scope", value: idea.mvpScope },
+    { label: "acquisition", value: idea.acquisitionChannel },
+    { label: "red flag", value: idea.redFlag, danger: true },
+  ].filter((f) => f.value);
+
   return (
     <div
-      className="dialog-overlay"
+      className="overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div className="dialog">
-        <div className="dialog-header">
-          <div className="dialog-title">{idea.title}</div>
-          <button className="dialog-close" onClick={onClose}>
+        <div className="dialog-top">
+          <div className="dialog-meta-row">
+            <span style={{ color: t.color, fontSize: "11px" }}>{t.label}</span>
+            {idea.competitionLevel && (
+              <span className="dmeta">{compLabel[idea.competitionLevel]}</span>
+            )}
+            <span className="dmeta">seen {idea.seenCount}×</span>
+            <span className="dmeta">score {idea.score}</span>
+            {idea.firstSeenAt && (
+              <span className="dmeta">
+                first seen{" "}
+                {new Date(idea.firstSeenAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </span>
+            )}
+          </div>
+          <button className="close-btn" onClick={onClose}>
             ✕
           </button>
         </div>
 
-        <div className="dialog-meta">
-          {idea.competitionLevel && (
-            <span
-              className="comp-badge"
-              style={{ color: comp.color, background: comp.bg }}
-            >
-              {comp.label}
-            </span>
-          )}
-          <span
-            style={{
-              color: t.color,
-              fontSize: "11px",
-              letterSpacing: "0.08em",
-            }}
-          >
-            {t.label}
-          </span>
-          <div className="idea-sources">
-            {idea.sources.map((s) => (
-              <span className="source-chip" key={s}>
-                {s.replace("weekly-brief", "BRIEF").toUpperCase()}
-              </span>
-            ))}
-          </div>
-        </div>
+        <h2 className="dialog-title">{idea.title}</h2>
+        <p className="dialog-liner">{idea.oneLiner}</p>
 
-        <div className="dialog-body">
-          <div className="dialog-stats">
-            <div className="dialog-stat">
-              <div className="dialog-stat-val">{idea.seenCount}×</div>
-              <div className="dialog-stat-label">TIMES SEEN</div>
-            </div>
-            <div className="dialog-stat">
-              <div className="dialog-stat-val">{idea.score}</div>
-              <div className="dialog-stat-label">SCORE</div>
-            </div>
-            <div className="dialog-stat">
+        <div className="dfields">
+          {fields.map((f) => (
+            <div className="dfield" key={f.label}>
+              <div className="dfield-label">{f.label}</div>
               <div
-                className="dialog-stat-val"
-                style={{ fontSize: "13px", paddingTop: "5px" }}
+                className="dfield-value"
+                style={f.danger ? { color: "#cc5555" } : {}}
               >
-                {idea.firstSeenAt
-                  ? new Date(idea.firstSeenAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "—"}
+                {f.value}
               </div>
-              <div className="dialog-stat-label">FIRST SEEN</div>
             </div>
-          </div>
-
-          <div className="dialog-liner">{idea.oneLiner}</div>
-
-          <div className="dialog-grid">
-            {idea.demandEvidence && (
-              <div className="dialog-field-full">
-                <div className="field-label">Demand Evidence</div>
-                <div className="field-value">{idea.demandEvidence}</div>
-              </div>
-            )}
-            {idea.mvpScope && (
-              <div className="dialog-field">
-                <div className="field-label">MVP Scope</div>
-                <div className="field-value">{idea.mvpScope}</div>
-              </div>
-            )}
-            {idea.acquisitionChannel && (
-              <div className="dialog-field">
-                <div className="field-label">Acquisition Channel</div>
-                <div className="field-value">{idea.acquisitionChannel}</div>
-              </div>
-            )}
-            {idea.redFlag && (
-              <div className="dialog-field-full">
-                <div className="field-label">Red Flag</div>
-                <div className="field-value red-flag-value">{idea.redFlag}</div>
-              </div>
-            )}
-          </div>
-
-          {idea.lastSeenAt && (
-            <div
-              style={{
-                fontSize: "10px",
-                color: "#333",
-                letterSpacing: "0.08em",
-              }}
-            >
-              LAST SEEN ·{" "}
-              {new Date(idea.lastSeenAt)
-                .toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })
-                .toUpperCase()}
-            </div>
-          )}
+          ))}
         </div>
+
+        {idea.lastSeenAt && (
+          <div className="dialog-footer">
+            last seen ·{" "}
+            {new Date(idea.lastSeenAt).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -232,771 +168,310 @@ export default function Dashboard() {
     load();
   }, []);
 
-  if (loading)
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#080808",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "'IBM Plex Mono', monospace",
-          color: "#333",
-          fontSize: "13px",
-          letterSpacing: "0.1em",
-        }}
-      >
-        LOADING INTELLIGENCE BRIEF...
-      </div>
-    );
+  if (loading) return <div className="state-screen">loading...</div>;
 
   if (!brief)
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#080808",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "'IBM Plex Mono', monospace",
-          color: "#333",
-          fontSize: "13px",
-        }}
-      >
-        NO BRIEF FOUND — RUN PIPELINE FIRST
-      </div>
+      <div className="state-screen">no brief found — run pipeline first</div>
     );
 
   const opp = brief.top3Opportunities[selected];
-  const comp = competitionConfig[opp?.competitionLevel ?? "medium"];
 
-  const agentList = [
-    { key: "reddit", label: "REDDIT", data: agents?.reddit },
-    { key: "producthunt", label: "PRODUCT HUNT", data: agents?.producthunt },
-    { key: "hackernews", label: "HACKER NEWS", data: agents?.hackernews },
-  ];
+  const agentLine = [
+    { label: "reddit", data: agents?.reddit },
+    { label: "product hunt", data: agents?.producthunt },
+    { label: "hacker news", data: agents?.hackernews },
+  ]
+    .map((a) => {
+      if (!a.data) return `${a.label} · no data`;
+      if (a.data.error) return `${a.label} · error`;
+      return `${a.label} · ${a.data.rawCount} items`;
+    })
+    .join("   ");
+
+  const lastRun = brief.createdAt
+    ? new Date(brief.createdAt)
+        .toLocaleDateString("en-US", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+        })
+        .toLowerCase()
+    : "—";
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@500;600;700;800&display=swap');
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { background: #0a0a0a; color: #c8c8c8; font-family: 'IBM Plex Mono', monospace; }
 
-        body { background: #080808; }
-
-        .dashboard {
-          min-height: 100vh;
-          background: #080808;
-          color: #e8e8e8;
-          font-family: 'IBM Plex Mono', monospace;
-          padding: 0;
-        }
-
-        /* Scanline overlay */
-        .dashboard::before {
-          content: '';
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: repeating-linear-gradient(
-            0deg,
-            transparent,
-            transparent 2px,
-            rgba(0,0,0,0.03) 2px,
-            rgba(0,0,0,0.03) 4px
-          );
-          pointer-events: none;
-          z-index: 100;
-        }
-
-        .topbar {
-          border-bottom: 1px solid #1a1a1a;
-          padding: 16px 32px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          position: sticky;
-          top: 0;
-          background: rgba(8,8,8,0.95);
-          backdrop-filter: blur(8px);
-          z-index: 10;
-        }
-
-        .logo {
-          font-family: 'Syne', sans-serif;
-          font-size: 18px;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-          color: #fff;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .logo-dot {
-          width: 8px;
-          height: 8px;
-          background: #00ff88;
-          border-radius: 50%;
-          animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(0.8); }
-        }
-
-        .topbar-right {
-          display: flex;
-          align-items: center;
-          gap: 24px;
-          font-size: 11px;
-          color: #444;
-          letter-spacing: 0.08em;
-        }
-
-        .date-stamp {
-          color: #555;
-          font-size: 11px;
-          letter-spacing: 0.06em;
-        }
-
-        .nav-tabs {
-          display: flex;
-          gap: 0;
-          border: 1px solid #1a1a1a;
-          border-radius: 4px;
-          overflow: hidden;
-        }
-
-        .nav-tab {
-          padding: 6px 16px;
-          font-size: 10px;
-          letter-spacing: 0.1em;
-          cursor: pointer;
-          border: none;
-          font-family: 'IBM Plex Mono', monospace;
-          transition: all 0.15s;
-          background: transparent;
-          color: #444;
-        }
-
-        .nav-tab.active {
-          background: #1a1a1a;
-          color: #e8e8e8;
-        }
-
-        .main {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 32px;
-        }
-
-        /* Agent status bar */
-        .agent-bar {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1px;
-          background: #111;
-          border: 1px solid #111;
-          border-radius: 6px;
-          overflow: hidden;
-          margin-bottom: 32px;
-        }
-
-        .agent-cell {
-          background: #0c0c0c;
-          padding: 14px 18px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .agent-name {
-          font-size: 10px;
-          letter-spacing: 0.12em;
-          color: #555;
-        }
-
-        .agent-meta {
-          font-size: 10px;
-          color: #333;
-          margin-top: 3px;
-        }
-
-        .agent-status {
-          font-size: 10px;
-          letter-spacing: 0.06em;
-          padding: 3px 8px;
-          border-radius: 2px;
-        }
-
-        .status-ok { color: #00ff88; background: rgba(0,255,136,0.08); }
-        .status-err { color: #ff4444; background: rgba(255,68,68,0.08); }
-        .status-none { color: #444; background: rgba(255,255,255,0.04); }
-
-        /* Opportunity selector */
-        .opp-selector {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 20px;
-        }
-
-        .opp-tab {
-          flex: 1;
-          padding: 12px 16px;
-          background: #0c0c0c;
-          border: 1px solid #1a1a1a;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.15s;
-          text-align: left;
-          font-family: 'IBM Plex Mono', monospace;
-        }
-
-        .opp-tab:hover { border-color: #2a2a2a; background: #0f0f0f; }
-
-        .opp-tab.active {
-          border-color: #00ff88;
-          background: rgba(0,255,136,0.04);
-        }
-
-        .opp-tab-num {
-          font-size: 10px;
-          color: #444;
-          letter-spacing: 0.1em;
-          margin-bottom: 4px;
-        }
-
-        .opp-tab.active .opp-tab-num { color: #00ff88; }
-
-        .opp-tab-title {
-          font-size: 11px;
-          color: #888;
-          line-height: 1.4;
-          font-family: 'Syne', sans-serif;
-          font-weight: 600;
-        }
-
-        .opp-tab.active .opp-tab-title { color: #e8e8e8; }
-
-        /* Main opportunity card */
-        .opp-card {
-          background: #0c0c0c;
-          border: 1px solid #1a1a1a;
-          border-radius: 6px;
-          padding: 28px;
-          margin-bottom: 16px;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .opp-card::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, #00ff88, transparent);
-        }
-
-        .opp-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          margin-bottom: 12px;
-          gap: 16px;
-        }
-
-        .opp-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 22px;
-          font-weight: 700;
-          color: #fff;
-          line-height: 1.2;
-          letter-spacing: -0.02em;
-        }
-
-        .comp-badge {
-          font-size: 10px;
-          letter-spacing: 0.1em;
-          padding: 5px 10px;
-          border-radius: 2px;
-          white-space: nowrap;
-          flex-shrink: 0;
-        }
-
-        .opp-liner {
-          font-size: 14px;
-          color: #666;
-          line-height: 1.6;
-          margin-bottom: 28px;
-          font-family: 'Syne', sans-serif;
-          font-weight: 400;
-        }
-
-        .opp-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1px;
-          background: #111;
-          border: 1px solid #111;
-          border-radius: 4px;
-          overflow: hidden;
-        }
-
-        .opp-field {
-          background: #080808;
-          padding: 16px;
-        }
-
-        .field-label {
-          font-size: 9px;
-          letter-spacing: 0.15em;
-          color: #333;
-          margin-bottom: 8px;
-          text-transform: uppercase;
-        }
-
-        .field-value {
-          font-size: 12px;
-          color: #aaa;
-          line-height: 1.6;
-          font-family: 'Syne', sans-serif;
-        }
-
-        .red-flag-value {
-          color: #ff6666;
-        }
-
-        /* Bottom row */
-        .bottom-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-bottom: 16px;
-        }
-
-        .info-card {
-          background: #0c0c0c;
-          border: 1px solid #1a1a1a;
-          border-radius: 6px;
-          padding: 20px;
-        }
-
-        .card-label {
-          font-size: 9px;
-          letter-spacing: 0.15em;
-          color: #333;
-          margin-bottom: 12px;
-          text-transform: uppercase;
-        }
-
-        .card-value {
+        .state-screen {
+          min-height: 100vh; display: flex; align-items: center; justify-content: center;
+          background: #0a0a0a; color: #444; font-family: 'IBM Plex Mono', monospace;
           font-size: 13px;
-          color: #bbb;
-          line-height: 1.6;
-          font-family: 'Syne', sans-serif;
         }
 
-        .rising-theme-value {
-          font-family: 'Syne', sans-serif;
-          font-size: 16px;
-          font-weight: 700;
-          color: #fff;
-          line-height: 1.3;
+        .wrap { max-width: 960px; margin: 0 auto; padding: 48px 32px; }
+
+        /* Header */
+        .header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+        .logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.03em; }
+        .nav { display: flex; gap: 24px; }
+        .nav-item { font-size: 12px; color: #444; cursor: pointer; transition: color 0.1s; background: none; border: none; font-family: 'IBM Plex Mono', monospace; padding: 0; }
+        .nav-item:hover { color: #aaa; }
+        .nav-item.active { color: #c8c8c8; }
+
+        /* Agent line */
+        .agent-line { font-size: 11px; color: #333; margin-bottom: 48px; letter-spacing: 0.02em; }
+
+        /* Brief layout */
+        .brief-layout { display: grid; grid-template-columns: 200px 1fr; gap: 48px; }
+
+        /* Sidebar */
+        .sidebar { display: flex; flex-direction: column; gap: 2px; padding-top: 4px; }
+        .sidebar-item {
+          display: flex; align-items: baseline; gap: 12px;
+          padding: 10px 12px; border-radius: 4px;
+          cursor: pointer; transition: background 0.1s;
+          border: none; background: none; text-align: left;
+          font-family: 'IBM Plex Mono', monospace; width: 100%;
         }
+        .sidebar-item:hover { background: #111; }
+        .sidebar-item.active { background: #111; }
+        .sidebar-num { font-size: 10px; color: #333; flex-shrink: 0; }
+        .sidebar-item.active .sidebar-num { color: #555; }
+        .sidebar-title { font-size: 11px; color: #444; line-height: 1.5; font-family: 'Syne', sans-serif; font-weight: 600; }
+        .sidebar-item.active .sidebar-title { color: #c8c8c8; }
 
-        /* Narrative traps */
-        .traps-card {
-          background: #0c0c0c;
-          border: 1px solid #1a1a1a;
-          border-radius: 6px;
-          padding: 20px;
-          margin-bottom: 16px;
-        }
+        /* Content */
+        .content {}
+        .opp-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; color: #fff; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 6px; }
+        .opp-comp { font-size: 11px; color: #444; margin-bottom: 20px; }
+        .opp-liner { font-size: 14px; color: #666; line-height: 1.7; margin-bottom: 36px; font-family: 'Syne', sans-serif; }
 
-        .trap-item {
-          display: flex;
-          gap: 12px;
-          padding: 10px 0;
-          border-bottom: 1px solid #111;
-          align-items: flex-start;
-        }
+        /* Fields */
+        .fields { display: flex; flex-direction: column; }
+        .field { padding: 16px 0; border-top: 1px solid #141414; }
+        .field:last-child { border-bottom: 1px solid #141414; }
+        .field-label { font-size: 9px; letter-spacing: 0.15em; color: #333; margin-bottom: 8px; text-transform: uppercase; }
+        .field-value { font-size: 13px; color: #888; line-height: 1.6; font-family: 'Syne', sans-serif; }
+        .field-danger { color: #cc5555; }
 
-        .trap-item:last-child { border-bottom: none; }
+        /* Bottom section */
+        .bottom { margin-top: 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+        .bottom-block {}
+        .bottom-label { font-size: 9px; letter-spacing: 0.15em; color: #2a2a2a; text-transform: uppercase; margin-bottom: 12px; }
+        .bottom-value { font-size: 14px; color: #666; line-height: 1.7; font-family: 'Syne', sans-serif; }
+        .rising-value { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: #bbb; line-height: 1.3; letter-spacing: -0.02em; }
 
-        .trap-x {
-          color: #ff4444;
-          font-size: 11px;
-          flex-shrink: 0;
-          margin-top: 2px;
-        }
+        /* Traps */
+        .traps { margin-top: 48px; }
+        .traps-label { font-size: 9px; letter-spacing: 0.15em; color: #2a2a2a; text-transform: uppercase; margin-bottom: 16px; }
+        .trap { display: flex; gap: 12px; padding: 12px 0; border-top: 1px solid #111; align-items: baseline; }
+        .trap:last-child { border-bottom: 1px solid #111; }
+        .trap-mark { font-size: 10px; color: #333; flex-shrink: 0; }
+        .trap-text { font-size: 12px; color: #555; line-height: 1.6; font-family: 'Syne', sans-serif; }
 
-        .trap-text {
-          font-size: 12px;
-          color: #666;
-          line-height: 1.5;
-          font-family: 'Syne', sans-serif;
-        }
+        /* Tracker */
+        .tracker-head { margin-bottom: 32px; }
+        .tracker-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.02em; margin-bottom: 4px; }
+        .tracker-sub { font-size: 11px; color: #333; }
 
-        /* Idea tracker */
-        .tracker-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 20px;
-        }
-
-        .tracker-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 20px;
-          font-weight: 700;
-          color: #fff;
-        }
-
-        .tracker-subtitle {
-          font-size: 11px;
-          color: #444;
-          margin-top: 4px;
-          letter-spacing: 0.04em;
-        }
-
-        .ideas-list {
-          display: flex;
-          flex-direction: column;
-          gap: 1px;
-          background: #111;
-          border: 1px solid #111;
-          border-radius: 6px;
-          overflow: hidden;
-        }
-
+        .ideas { display: flex; flex-direction: column; }
         .idea-row {
-          background: #0c0c0c;
-          padding: 16px 20px;
-          display: grid;
-          grid-template-columns: 1fr auto auto auto;
-          gap: 24px;
-          align-items: center;
-          cursor: pointer;
-          transition: background 0.1s;
+          display: grid; grid-template-columns: 1fr 100px 60px;
+          gap: 24px; align-items: center;
+          padding: 16px 0; border-top: 1px solid #111;
+          cursor: pointer; transition: all 0.1s;
         }
+        .idea-row:last-child { border-bottom: 1px solid #111; }
+        .idea-row:hover .idea-name { color: #fff; }
+        .idea-row:hover .idea-arrow { opacity: 1; }
+        .idea-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; color: #888; margin-bottom: 3px; transition: color 0.1s; }
+        .idea-sub { font-size: 11px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 500px; }
+        .idea-seen { font-size: 11px; color: #333; text-align: right; }
+        .idea-trend { font-size: 11px; text-align: right; }
+        .idea-arrow { opacity: 0; transition: opacity 0.1s; font-size: 11px; color: #444; }
 
-        .idea-row:hover { background: #111; }
-
-        .idea-row:hover .idea-title { color: #fff; }
-
-        .idea-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 13px;
-          font-weight: 600;
-          color: #ccc;
-          margin-bottom: 3px;
-          transition: color 0.1s;
-        }
-
-        .idea-liner {
-          font-size: 11px;
-          color: #444;
-          font-family: 'Syne', sans-serif;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          max-width: 400px;
-        }
-
-        .idea-sources {
-          display: flex;
-          gap: 4px;
-        }
-
-        .source-chip {
-          font-size: 9px;
-          letter-spacing: 0.06em;
-          padding: 2px 6px;
-          border-radius: 2px;
-          background: #111;
-          color: #444;
-          border: 1px solid #1a1a1a;
-        }
-
-        .idea-seen {
-          font-size: 11px;
-          color: #444;
-          letter-spacing: 0.06em;
-          white-space: nowrap;
-        }
-
-        .idea-trend {
-          font-size: 10px;
-          letter-spacing: 0.08em;
-          white-space: nowrap;
-          min-width: 80px;
-          text-align: right;
-        }
-
-        .ideas-empty {
-          padding: 40px;
-          text-align: center;
-          font-size: 12px;
-          color: #333;
-          letter-spacing: 0.06em;
-        }
-
-        /* Section divider */
-        .section-divider {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 20px;
-        }
-
-        .divider-label {
-          font-size: 10px;
-          letter-spacing: 0.15em;
-          color: #333;
-          white-space: nowrap;
-        }
-
-        .divider-line {
-          flex: 1;
-          height: 1px;
-          background: #111;
-        }
+        /* Footer */
+        .footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid #111; font-size: 11px; color: #2a2a2a; display: flex; justify-content: space-between; }
 
         /* Dialog */
-        .dialog-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-          z-index: 200; display: flex; align-items: center; justify-content: center;
-          padding: 32px; animation: fadeIn 0.15s ease;
+        .overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+          z-index: 100; display: flex; align-items: center; justify-content: center;
+          padding: 32px; animation: fi 0.15s ease;
         }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fi { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes su { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
         .dialog {
-          background: #0c0c0c; border: 1px solid #222; border-radius: 8px;
-          width: 100%; max-width: 720px; max-height: 85vh; overflow-y: auto;
-          position: relative; animation: slideUp 0.2s ease;
+          background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 6px;
+          width: 100%; max-width: 580px; max-height: 80vh; overflow-y: auto;
+          padding: 32px; animation: su 0.18s ease; position: relative;
         }
-        .dialog::before {
-          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-          background: linear-gradient(90deg, #00ff88, transparent 60%);
-          border-radius: 8px 8px 0 0;
-        }
-        .dialog-header { padding: 28px 28px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-        .dialog-title { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 700; color: #fff; line-height: 1.2; letter-spacing: -0.02em; }
-        .dialog-close { background: #111; border: 1px solid #1a1a1a; color: #555; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; font-family: 'IBM Plex Mono', monospace; }
-        .dialog-close:hover { color: #fff; border-color: #333; background: #1a1a1a; }
-        .dialog-meta { padding: 12px 28px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #111; flex-wrap: wrap; }
-        .dialog-body { padding: 24px 28px 28px; display: flex; flex-direction: column; gap: 20px; }
-        .dialog-liner { font-family: 'Syne', sans-serif; font-size: 15px; color: #777; line-height: 1.6; }
-        .dialog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #111; border: 1px solid #111; border-radius: 4px; overflow: hidden; }
-        .dialog-field { background: #080808; padding: 16px; }
-        .dialog-field-full { background: #080808; padding: 16px; grid-column: 1 / -1; }
-        .dialog-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #111; border: 1px solid #111; border-radius: 4px; overflow: hidden; }
-        .dialog-stat { background: #080808; padding: 14px 16px; text-align: center; }
-        .dialog-stat-val { font-size: 22px; font-weight: 600; font-family: 'Syne', sans-serif; color: #fff; margin-bottom: 4px; }
-        .dialog-stat-label { font-size: 9px; letter-spacing: 0.12em; color: #333; }
+        .dialog-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .dialog-meta-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .dmeta { font-size: 11px; color: #333; }
+        .close-btn { background: none; border: none; color: #444; cursor: pointer; font-size: 13px; font-family: 'IBM Plex Mono', monospace; padding: 4px; transition: color 0.1s; }
+        .close-btn:hover { color: #aaa; }
+        .dialog-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 12px; }
+        .dialog-liner { font-family: 'Syne', sans-serif; font-size: 14px; color: #555; line-height: 1.7; margin-bottom: 28px; }
+        .dfields { display: flex; flex-direction: column; }
+        .dfield { padding: 14px 0; border-top: 1px solid #111; }
+        .dfield:last-child { border-bottom: 1px solid #111; }
+        .dfield-label { font-size: 9px; letter-spacing: 0.15em; color: #2a2a2a; text-transform: uppercase; margin-bottom: 7px; }
+        .dfield-value { font-size: 12px; color: #777; line-height: 1.6; font-family: 'Syne', sans-serif; }
+        .dialog-footer { font-size: 10px; color: #2a2a2a; margin-top: 24px; letter-spacing: 0.04em; }
       `}</style>
 
-      <div className="dashboard">
-        {selectedIdea && (
-          <IdeaDialog
-            idea={selectedIdea}
-            onClose={() => setSelectedIdea(null)}
-          />
-        )}
+      {selectedIdea && (
+        <IdeaDialog idea={selectedIdea} onClose={() => setSelectedIdea(null)} />
+      )}
 
-        {/* Topbar */}
-        <div className="topbar">
-          <div className="logo">
-            <div className="logo-dot" />
-            IDEA RADAR
-          </div>
-          <div className="topbar-right">
-            <span className="date-stamp">
-              BRIEF ·{" "}
-              {new Date(brief.createdAt)
-                .toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })
-                .toUpperCase()}
-            </span>
-            <div className="nav-tabs">
-              <button
-                className={`nav-tab ${activeTab === "brief" ? "active" : ""}`}
-                onClick={() => setActiveTab("brief")}
-              >
-                WEEKLY BRIEF
-              </button>
-              <button
-                className={`nav-tab ${activeTab === "tracker" ? "active" : ""}`}
-                onClick={() => setActiveTab("tracker")}
-              >
-                IDEA TRACKER
-              </button>
-            </div>
-          </div>
+      <div className="wrap">
+        {/* Header */}
+        <div className="header">
+          <div className="logo">idea radar</div>
+          <nav className="nav">
+            <button
+              className={`nav-item ${activeTab === "brief" ? "active" : ""}`}
+              onClick={() => setActiveTab("brief")}
+            >
+              weekly brief
+            </button>
+            <button
+              className={`nav-item ${activeTab === "tracker" ? "active" : ""}`}
+              onClick={() => setActiveTab("tracker")}
+            >
+              idea tracker
+            </button>
+          </nav>
         </div>
 
-        <div className="main">
-          {/* Agent status */}
-          <div className="agent-bar">
-            {agentList.map(({ key, label, data }) => (
-              <div className="agent-cell" key={key}>
-                <div>
-                  <div className="agent-name">{label}</div>
-                  <div className="agent-meta">
-                    {data
-                      ? `${data.rawCount} ITEMS · ${new Date(data.runAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`
-                      : "NO DATA"}
-                  </div>
-                </div>
-                <span
-                  className={`agent-status ${!data ? "status-none" : data.error ? "status-err" : "status-ok"}`}
-                >
-                  {!data ? "N/A" : data.error ? "ERR" : "OK"}
-                </span>
-              </div>
-            ))}
-          </div>
+        {/* Agent status line */}
+        <div className="agent-line">{agentLine}</div>
 
-          {activeTab === "brief" && (
-            <>
-              {/* Opportunity selector */}
-              <div className="section-divider">
-                <span className="divider-label">TOP OPPORTUNITIES</span>
-                <div className="divider-line" />
-              </div>
-
-              <div className="opp-selector">
+        {activeTab === "brief" && (
+          <>
+            <div className="brief-layout">
+              {/* Sidebar */}
+              <div className="sidebar">
                 {brief.top3Opportunities.map((o, i) => (
                   <button
                     key={i}
-                    className={`opp-tab ${selected === i ? "active" : ""}`}
+                    className={`sidebar-item ${selected === i ? "active" : ""}`}
                     onClick={() => setSelected(i)}
                   >
-                    <div className="opp-tab-num">#{i + 1}</div>
-                    <div className="opp-tab-title">{o.title}</div>
+                    <span className="sidebar-num">0{i + 1}</span>
+                    <span className="sidebar-title">{o.title}</span>
                   </button>
                 ))}
               </div>
 
-              {/* Main opportunity card */}
+              {/* Main content */}
               {opp && (
-                <div className="opp-card">
-                  <div className="opp-header">
-                    <div className="opp-title">{opp.title}</div>
-                    <span
-                      className="comp-badge"
-                      style={{ color: comp.color, background: comp.bg }}
-                    >
-                      {comp.label}
-                    </span>
+                <div className="content">
+                  <div className="opp-title">{opp.title}</div>
+                  <div className="opp-comp">
+                    {compLabel[opp.competitionLevel]}
                   </div>
                   <div className="opp-liner">{opp.oneLiner}</div>
-                  <div className="opp-grid">
-                    <div className="opp-field">
-                      <div className="field-label">Demand Evidence</div>
-                      <div className="field-value">{opp.demandEvidence}</div>
-                    </div>
-                    <div className="opp-field">
-                      <div className="field-label">MVP Scope</div>
-                      <div className="field-value">{opp.mvpScope}</div>
-                    </div>
-                    <div className="opp-field">
-                      <div className="field-label">Acquisition Channel</div>
-                      <div className="field-value">
-                        {opp.acquisitionChannel}
+
+                  <div className="fields">
+                    {[
+                      { label: "demand evidence", value: opp.demandEvidence },
+                      { label: "mvp scope", value: opp.mvpScope },
+                      { label: "acquisition", value: opp.acquisitionChannel },
+                    ].map((f) => (
+                      <div className="field" key={f.label}>
+                        <div className="field-label">{f.label}</div>
+                        <div className="field-value">{f.value}</div>
                       </div>
-                    </div>
-                    <div className="opp-field">
-                      <div className="field-label">Red Flag</div>
-                      <div className="field-value red-flag-value">
+                    ))}
+                    <div className="field">
+                      <div className="field-label">red flag</div>
+                      <div className="field-value field-danger">
                         {opp.redFlag}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Bottom row */}
-              <div className="bottom-grid">
-                <div className="info-card">
-                  <div className="card-label">Rising Theme</div>
-                  <div className="rising-theme-value">{brief.risingTheme}</div>
+            {/* Bottom */}
+            <div className="bottom">
+              <div className="bottom-block">
+                <div className="bottom-label">rising theme</div>
+                <div className="rising-value">{brief.risingTheme}</div>
+              </div>
+              <div className="bottom-block">
+                <div className="bottom-label">contrary take</div>
+                <div className="bottom-value">{brief.contraryTake}</div>
+              </div>
+            </div>
+
+            {/* Traps */}
+            <div className="traps">
+              <div className="traps-label">narrative traps</div>
+              {brief.narrativeTraps.map((trap, i) => (
+                <div className="trap" key={i}>
+                  <span className="trap-mark">—</span>
+                  <span className="trap-text">{trap}</span>
                 </div>
-                <div className="info-card">
-                  <div className="card-label">Contrary Take</div>
-                  <div className="card-value">{brief.contraryTake}</div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {activeTab === "tracker" && (
+          <>
+            <div className="tracker-head">
+              <div className="tracker-title">idea tracker</div>
+              <div className="tracker-sub">
+                {ideas.length} ideas tracked across weeks
+              </div>
+            </div>
+
+            <div className="ideas">
+              {ideas.length === 0 ? (
+                <div
+                  style={{ color: "#333", fontSize: "12px", padding: "24px 0" }}
+                >
+                  no ideas tracked yet
                 </div>
-              </div>
-
-              {/* Narrative traps */}
-              <div className="section-divider">
-                <span className="divider-label">NARRATIVE TRAPS</span>
-                <div className="divider-line" />
-              </div>
-              <div className="traps-card">
-                {brief.narrativeTraps.map((trap, i) => (
-                  <div className="trap-item" key={i}>
-                    <span className="trap-x">✕</span>
-                    <span className="trap-text">{trap}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {activeTab === "tracker" && (
-            <>
-              <div className="tracker-header">
-                <div>
-                  <div className="tracker-title">Idea Tracker</div>
-                  <div className="tracker-subtitle">
-                    {ideas.length} IDEAS · CLICK ANY ROW TO EXPAND
-                  </div>
-                </div>
-              </div>
-
-              <div className="ideas-list">
-                {ideas.length === 0 ? (
-                  <div className="ideas-empty">NO IDEAS TRACKED YET</div>
-                ) : (
-                  ideas.map((idea) => {
-                    const t = trendConfig[idea.trend];
-                    return (
-                      <div
-                        className="idea-row"
-                        key={idea._id}
-                        onClick={() => setSelectedIdea(idea)}
-                      >
-                        <div>
-                          <div className="idea-title">{idea.title}</div>
-                          <div className="idea-liner">{idea.oneLiner}</div>
-                        </div>
-                        <div className="idea-sources">
-                          {idea.sources.map((s) => (
-                            <span className="source-chip" key={s}>
-                              {s.replace("weekly-brief", "BRIEF").toUpperCase()}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="idea-seen">SEEN {idea.seenCount}×</div>
-                        <div className="idea-trend" style={{ color: t.color }}>
-                          {t.label}
-                        </div>
+              ) : (
+                ideas.map((idea) => {
+                  const t = trendConfig[idea.trend];
+                  return (
+                    <div
+                      className="idea-row"
+                      key={idea._id}
+                      onClick={() => setSelectedIdea(idea)}
+                    >
+                      <div>
+                        <div className="idea-name">{idea.title}</div>
+                        <div className="idea-sub">{idea.oneLiner}</div>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </>
-          )}
+                      <div className="idea-seen">seen {idea.seenCount}×</div>
+                      <div className="idea-trend" style={{ color: t.color }}>
+                        {t.label}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Footer */}
+        <div className="footer">
+          <span>last run · {lastRun} · 3 agents</span>
+          <span>idea radar</span>
         </div>
       </div>
     </>

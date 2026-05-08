@@ -1,4 +1,5 @@
-export const API_BASE = "http://localhost:3001/api";
+export const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001/api";
 
 export const COMPETITION_COLORS: Record<"low" | "medium" | "high", string> = {
   low: "bg-emerald-50 text-emerald-700 border border-emerald-200",
