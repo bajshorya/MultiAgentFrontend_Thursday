@@ -25,7 +25,16 @@ export interface AgentStatus {
 export interface Idea {
   _id: string;
   title: string;
+  oneLiner: string;
+  demandEvidence?: string;
+  competitionLevel?: "low" | "medium" | "high";
+  mvpScope?: string;
+  acquisitionChannel?: string;
+  redFlag?: string;
   seenCount: number;
   score: number;
-  trend: "rising" | "fading" | "stable";
+  trend: "rising" | "stable" | "fading";
+  sources: string[];
+  firstSeenAt?: string;
+  lastSeenAt?: string;
 }
